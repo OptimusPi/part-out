@@ -1,0 +1,7 @@
+{
+  "title": "PART-OUT",
+  "type": "x:game",
+  "card": "custom",
+  "color": "0c0d0f",
+  "description": "Drop a car GLB, claim named meshes, snap corner dots, and slice parts with L/R mirroring."
+}
