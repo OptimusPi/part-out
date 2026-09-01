@@ -191,7 +191,7 @@ function bootNotice(fused: boolean, named: number, meshes: number) {
 
 export const useStore = create<AppState>((set, get) => ({
   tool: "place",
-  pickMode: "mesh",
+  pickMode: "verts",
   activeKind: "driver_door",
   depth: 0.28,
   grow: 0,
@@ -276,7 +276,7 @@ export const useStore = create<AppState>((set, get) => ({
       loading: false,
       loadError: "",
       garageId,
-      pickMode: fused ? "verts" : "mesh",
+      pickMode: "verts",
       tool: "place",
       explode: 0,
     });
