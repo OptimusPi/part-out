@@ -1,25 +1,25 @@
 # PART-OUT
 
-Drop a car GLB on the bench, spin it, and part it out.
+Drop a car GLB, spin it, snap corner dots onto real vertices, cut parts, mirror L/R, export.
 
-- **Mesh claim** — click a named panel (door, wheel, hood) and cut it free. Left/right mirrors when the part is sided.
-- **Vertex snap** — plant corner dots on real vertices, extrude a slice volume, and cut doors / glass / bumpers off a fused mesh.
-- **Garage** — six shipped GLBs, from a named golf cart to single-mesh fused bodies. Open your own `.glb` anytime.
+For 400–800 face kits. Holds ~5k faces.
 
-Built for 400–800 face low-poly kits; holds up around ~5k faces.
+## Use
 
-## Use it
+1. Garage car or drop a `.glb`.
+2. **Dots** — click 4 corners (2 for wheels). **Door 2D** guesses a driver-door poster and snaps verts.
+3. **Cut** (Enter). **L/R** mirrors sided parts.
+4. **Mesh** — click a named panel, Cut. **Named** / **C** claims every useful name.
+5. **Explode** / **E**. **Export** writes a parted GLB.
 
-1. Pick a garage car or drop a GLB.
-2. **Mesh** mode: click a panel → **Cut**. **C** claims every named mesh at once.
-3. **Verts** mode: snap 4 corners (2 for wheels/mirrors) → **Cut**. Sided parts mirror across the car.
-4. Drag **Explode** (or tap **E**) to pull parts off the body. **Export** writes a parted GLB.
+Space = place / spin. V = dots / mesh. Ctrl+Z = undo (dot → pick → last cut).
 
-Space toggles place/spin. Enter cuts. V swaps mesh/verts.
+## Local Grok
 
-## Dev
+Read `AGENTS.project.md`. Finish cuts and snap quality. Do not rebuild the engine or pull a 256 GB CAD dump.
 
 ```bash
 npm install
 npm run dev
+npm test
 ```

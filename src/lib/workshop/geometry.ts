@@ -575,6 +575,114 @@ export function detectLrAxis(root: THREE.Object3D): LrAxis {
   return size.x <= size.z ? "x" : "z";
 }
 
+function axisGet(x: number, y: number, z: number, axis: "x" | "y" | "z") {
+  return axis === "x" ? x : axis === "y" ? y : z;
+}
+
+function axisSet(v: THREE.Vector3, axis: "x" | "y" | "z", n: number) {
+  if (axis === "x") v.x = n;
+  else if (axis === "y") v.y = n;
+  else v.z = n;
+}
+
+/** Side-elevation door poster. Not a 10M-object net. Snap 4 corners to real verts. */
+export function guessDoorFromSideView(
+  pickables: PickableMesh[],
+  lrAxis: LrAxis,
+  maxSnap = Infinity,
+): CornerDot[] {
+  const longAxis: "x" | "z" = lrAxis === "x" ? "z" : "x";
+  let minL = Infinity;
+  let maxL = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  let minLat = Infinity;
+  let maxLat = -Infinity;
+  for (const p of pickables) {
+    const a = p.worldPositions;
+    for (let i = 0; i < a.length; i += 3) {
+      const L = axisGet(a[i], a[i + 1], a[i + 2], longAxis);
+      const Y = a[i + 1];
+      const S = axisGet(a[i], a[i + 1], a[i + 2], lrAxis);
+      if (L < minL) minL = L;
+      if (L > maxL) maxL = L;
+      if (Y < minY) minY = Y;
+      if (Y > maxY) maxY = Y;
+      if (S < minLat) minLat = S;
+      if (S > maxLat) maxLat = S;
+    }
+  }
+  const len = maxL - minL;
+  const hy = maxY - minY;
+  const span = maxLat - minLat;
+  if (!(len > 1e-4 && hy > 1e-4 && span > 1e-4)) return [];
+
+  const groundCut = minY + hy * 0.18;
+  let frontSum = 0;
+  let frontN = 0;
+  let rearSum = 0;
+  let rearN = 0;
+  const midL = (minL + maxL) * 0.5;
+  for (const p of pickables) {
+    const a = p.worldPositions;
+    for (let i = 0; i < a.length; i += 3) {
+      if (a[i + 1] > groundCut) continue;
+      const L = axisGet(a[i], a[i + 1], a[i + 2], longAxis);
+      if (L < midL) {
+        frontSum += L;
+        frontN++;
+      } else {
+        rearSum += L;
+        rearN++;
+      }
+    }
+  }
+  const front = frontN ? frontSum / frontN : minL + len * 0.18;
+  const rear = rearN ? rearSum / rearN : maxL - len * 0.18;
+  const loL = front + (rear - front) * 0.22;
+  const hiL = front + (rear - front) * 0.68;
+  const loY = minY + hy * 0.2;
+  const hiY = minY + hy * 0.56;
+
+  const midLat = (minLat + maxLat) * 0.5;
+  let outer = minLat;
+  let outerScore = 0;
+  for (const p of pickables) {
+    const a = p.worldPositions;
+    for (let i = 0; i < a.length; i += 3) {
+      const L = axisGet(a[i], a[i + 1], a[i + 2], longAxis);
+      const Y = a[i + 1];
+      if (L < loL || L > hiL || Y < loY || Y > hiY) continue;
+      const S = axisGet(a[i], a[i + 1], a[i + 2], lrAxis);
+      const score = Math.abs(S - midLat);
+      if (score >= outerScore) {
+        outerScore = score;
+        outer = S;
+      }
+    }
+  }
+
+  const poster: [number, number][] = [
+    [loL, loY],
+    [hiL, loY],
+    [hiL, hiY],
+    [loL, hiY],
+  ];
+  const dots: CornerDot[] = [];
+  const seen = new Set<string>();
+  for (const [L, Y] of poster) {
+    const q = new THREE.Vector3();
+    axisSet(q, longAxis, L);
+    q.y = Y;
+    axisSet(q, lrAxis, outer);
+    const hit = nearestVertex(pickables, q, maxSnap);
+    if (!hit || seen.has(hit.id)) continue;
+    seen.add(hit.id);
+    dots.push(hit);
+  }
+  return dots.length >= 3 ? dots : [];
+}
+
 export function makeGeom(ex: ExtractedGeom) {
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.BufferAttribute(ex.positions, 3));

@@ -6,6 +6,7 @@ import {
   extractFaces,
   extractMeshes,
   fitAndCenter,
+  guessDoorFromSideView,
   nearestVertex,
   orderPolygon,
   pointInVolume,
@@ -101,5 +102,20 @@ describe("fitAndCenter", () => {
     root.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(root);
     assert.ok(Math.abs(box.min.y) < 1e-5, `min.y should be 0, got ${box.min.y}`);
+  });
+});
+
+describe("guessDoorFromSideView", () => {
+  it("drops four snaps on one long side of a car-shaped box", () => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 3));
+    mesh.updateMatrixWorld(true);
+    const pick = bakePickable(mesh);
+    const dots = guessDoorFromSideView([pick], "x", 2);
+    assert.ok(dots.length >= 3, `expected ≥3 dots, got ${dots.length}`);
+    const xs = dots.map((d) => d.world[0]);
+    const sameSide = xs.every((x) => Math.abs(x - xs[0]) < 0.15);
+    assert.ok(sameSide, "door poster should stay on one L/R side");
+    const zs = dots.map((d) => d.world[2]);
+    assert.ok(Math.max(...zs) - Math.min(...zs) > 0.2, "door should have length");
   });
 });

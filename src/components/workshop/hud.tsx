@@ -82,9 +82,9 @@ function useHotkeys() {
         if (r === "need-mesh") toast.message("Click a mesh first");
         if (r === "need-dots") toast.message("Place corner dots first");
       }
-      if ((e.key === "z" || e.key === "Z") && (e.metaKey || e.ctrlKey)) {
+      if ((e.key === "z" || e.key === "Z") && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
         e.preventDefault();
-        s.undoDot();
+        s.undo();
       }
       if (e.key === "Backspace" || e.key === "Escape") s.clearDots();
       if (e.key === "e" || e.key === "E") s.setExplode(s.explode > 0.05 ? 0 : 1.15);
@@ -126,7 +126,8 @@ export function Hud() {
   const notice = useStore((s) => s.notice);
   const commitPart = useStore((s) => s.commitPart);
   const claimNamed = useStore((s) => s.claimNamed);
-  const undoDot = useStore((s) => s.undoDot);
+  const suggestDoor = useStore((s) => s.suggestDoor);
+  const undo = useStore((s) => s.undo);
   const clearDots = useStore((s) => s.clearDots);
   const removePart = useStore((s) => s.removePart);
   const clearParts = useStore((s) => s.clearParts);
@@ -306,11 +307,23 @@ export function Hud() {
             >
               L/R
             </button>
-            <button type="button" className="btn-ghost" onClick={undoDot} disabled={!dots.length}>
+            <button type="button" className="btn-ghost" onClick={undo} disabled={!dots.length && !parts.length && !selectedMeshName}>
               Undo
             </button>
             <button type="button" className="btn-ghost" onClick={clearDots} disabled={!dots.length && !selectedMeshName}>
               Clear
+            </button>
+            <button
+              type="button"
+              className="btn-ghost"
+              disabled={loading || stats.vertices < 8}
+              onClick={() => {
+                const n = suggestDoor();
+                if (n < 3) toast.message("No door poster — snap corners yourself");
+                else toast.message(`${n} door snaps. Cut, then L/R.`);
+              }}
+            >
+              Door 2D
             </button>
             {namedCount > 0 ? (
               <button type="button" className="btn-ghost" disabled={loading} onClick={() => claimNamed()}>

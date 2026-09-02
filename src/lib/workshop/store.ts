@@ -24,6 +24,7 @@ import {
   mirroredMeshUuids,
   modelStats,
   nearestVertex,
+  guessDoorFromSideView,
   type PickableMesh,
   uniqueWorldVertices,
   volumeFromDots,
@@ -75,6 +76,7 @@ export interface AppState {
   setShowVolume: (v: boolean) => void;
   setHoverSnap: (d: CornerDot | null) => void;
   undoDot: () => void;
+  undo: () => void;
   clearDots: () => void;
   removePart: (id: string) => void;
   clearParts: () => void;
@@ -86,6 +88,7 @@ export interface AppState {
   pickMesh: (uuid: string, name: string) => void;
   commitPart: () => "ok" | "empty" | "need-dots" | "need-mesh";
   claimNamed: () => number;
+  suggestDoor: () => number;
 }
 
 let sceneRoot: THREE.Group | null = null;
@@ -231,6 +234,27 @@ export const useStore = create<AppState>((set, get) => ({
   setShowVolume: (v) => set({ showVolume: v }),
   setHoverSnap: (d) => set({ hoverSnap: d }),
   undoDot: () => set({ dots: get().dots.slice(0, -1), notice: "" }),
+  undo: () => {
+    const s = get();
+    if (s.dots.length) {
+      set({ dots: s.dots.slice(0, -1), notice: "" });
+      return;
+    }
+    if (s.selectedMeshUuid) {
+      set({ selectedMeshUuid: null, selectedMeshName: "", notice: "" });
+      return;
+    }
+    const last = s.parts[s.parts.length - 1];
+    if (!last) return;
+    const parts = s.parts.slice(0, -1);
+    const claimed = rebuildClaimed(parts, s);
+    set({
+      parts,
+      claimedFaces: claimed,
+      leftoverFaces: s.stats.faces - claimed.size,
+      notice: `Undid ${last.label}`,
+    });
+  },
   clearDots: () => set({ dots: [], selectedMeshUuid: null, selectedMeshName: "", notice: "" }),
 
   removePart: (id) => {
@@ -420,6 +444,24 @@ export const useStore = create<AppState>((set, get) => ({
       notice: n ? `Claimed ${n} named parts` : "No named parts on this model",
     });
     return n;
+  },
+
+  suggestDoor: () => {
+    const s = get();
+    const max = Math.max(0.5, s.modelSize * 0.2);
+    const dots = guessDoorFromSideView(pickables, s.lrAxis, max);
+    if (dots.length < 3) {
+      set({ notice: "No door poster on this mesh" });
+      return 0;
+    }
+    set({
+      dots,
+      pickMode: "verts",
+      tool: "place",
+      activeKind: "driver_door",
+      notice: `Door 2D → ${dots.length} snaps. Cut, then L/R.`,
+    });
+    return dots.length;
   },
 }));
 
