@@ -147,6 +147,29 @@ export function uniqueWorldVertices(pickables: PickableMesh[], eps = 1e-4): Floa
   return out;
 }
 
+/** Keep at most `needed` snaps. Extra hits replace the nearest existing corner. */
+export function placeDot(dots: CornerDot[], hit: CornerDot, needed: number): CornerDot[] {
+  if (needed < 1) return dots;
+  if (dots.some((d) => d.id === hit.id)) return dots;
+  if (dots.length < needed) return [...dots, hit];
+  let best = 0;
+  let bestD = Infinity;
+  for (let i = 0; i < dots.length; i++) {
+    const a = dots[i].world;
+    const dx = a[0] - hit.world[0];
+    const dy = a[1] - hit.world[1];
+    const dz = a[2] - hit.world[2];
+    const d2 = dx * dx + dy * dy + dz * dz;
+    if (d2 < bestD) {
+      bestD = d2;
+      best = i;
+    }
+  }
+  const next = dots.slice();
+  next[best] = hit;
+  return next;
+}
+
 /** Sort points around their centroid in the best-fit plane (CCW). */
 export function orderPolygon(pts: THREE.Vector3[]): THREE.Vector3[] {
   if (pts.length < 3) return pts.slice();

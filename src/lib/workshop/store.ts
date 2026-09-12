@@ -25,6 +25,7 @@ import {
   modelStats,
   nearestVertex,
   guessDoorFromSideView,
+  placeDot,
   type PickableMesh,
   uniqueWorldVertices,
   volumeFromDots,
@@ -322,11 +323,17 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   pickVertex: (world) => {
-    const max = Math.max(0.35, get().modelSize * 0.08);
+    const s = get();
+    const max = Math.max(0.35, s.modelSize * 0.08);
     const hit = nearestVertex(pickables, world, max);
     if (!hit) return null;
-    if (get().dots.some((d) => d.id === hit.id)) return hit;
-    set({ dots: [...get().dots, hit], notice: "" });
+    const needed = PART_META[s.activeKind].dotsNeeded;
+    const dots = placeDot(s.dots, hit, needed);
+    const full = dots.length >= needed;
+    set({
+      dots,
+      notice: full ? `${needed} corners — Cut` : "",
+    });
     return hit;
   },
 
@@ -455,13 +462,13 @@ export const useStore = create<AppState>((set, get) => ({
       return 0;
     }
     set({
-      dots,
+      dots: dots.slice(0, 4),
       pickMode: "verts",
       tool: "place",
       activeKind: "driver_door",
-      notice: `Door 2D → ${dots.length} snaps. Cut, then L/R.`,
+      notice: "Door 2D — four corners. Cut.",
     });
-    return dots.length;
+    return Math.min(dots.length, 4);
   },
 }));
 

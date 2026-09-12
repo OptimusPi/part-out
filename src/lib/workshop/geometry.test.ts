@@ -9,6 +9,7 @@ import {
   guessDoorFromSideView,
   nearestVertex,
   orderPolygon,
+  placeDot,
   pointInVolume,
   volumeFromDots,
 } from "./geometry.ts";
@@ -102,6 +103,30 @@ describe("fitAndCenter", () => {
     root.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(root);
     assert.ok(Math.abs(box.min.y) < 1e-5, `min.y should be 0, got ${box.min.y}`);
+  });
+});
+
+describe("placeDot", () => {
+  it("caps at needed and replaces the nearest corner", () => {
+    const a = dot([0, 0, 0], "a");
+    a.id = "a";
+    const b = dot([1, 0, 0], "b");
+    b.id = "b";
+    const c = dot([1, 1, 0], "c");
+    c.id = "c";
+    const d = dot([0, 1, 0], "d");
+    d.id = "d";
+    const four = placeDot(placeDot(placeDot(placeDot([], a, 4), b, 4), c, 4), d, 4);
+    assert.equal(four.length, 4);
+    const extra = dot([0.1, 0, 0], "e");
+    extra.id = "e";
+    const next = placeDot(four, extra, 4);
+    assert.equal(next.length, 4);
+    assert.equal(next[0].id, "e");
+    assert.deepEqual(
+      next.slice(1).map((x) => x.id),
+      ["b", "c", "d"],
+    );
   });
 });
 

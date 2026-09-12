@@ -161,7 +161,9 @@ export function Hud() {
         : "Click a panel"
       : tool === "orbit"
         ? "Drag to spin"
-        : `Snap ${dots.length}/${needed} corners`;
+        : dots.length >= needed
+          ? `${needed} corners — Cut`
+          : `Snap ${dots.length}/${needed}`;
 
   return (
     <>
@@ -320,7 +322,7 @@ export function Hud() {
               onClick={() => {
                 const n = suggestDoor();
                 if (n < 3) toast.message("No door poster — snap corners yourself");
-                else toast.message(`${n} door snaps. Cut, then L/R.`);
+                else toast.message("Door 2D — four corners. Cut.");
               }}
             >
               Door 2D
